@@ -1,0 +1,7 @@
+torch==1.8.0
+loguru==0.5.3
+tqdm==4.51.0
+scipy==1.6.1
+faiss==1.7.0
+numpy==1.20.1
+pandas==1.2.2
