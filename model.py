@@ -31,11 +31,13 @@ class TopNModel:
                 ground_truth.append(user_positive_items)
 
         preds = self.recommend(users)
-        max_length = max(map(len, metrics.metric_dict.keys()))
+        max_length = max(map(len, metrics.metric_dict.keys())) + max(
+            map(lambda x: len(str(x)), config['METRICS_REPORT']))
         for metric_name, metric_func in metrics.metric_dict.items():
             for k in config['METRICS_REPORT']:
+                metric_name_total = f'{metric_name}@{k}'
                 metric_value = metric_func(preds, ground_truth, k).mean()
-                logger.info(f'{metric_name.rjust(max_length)}@{k} = {metric_value}')
+                logger.info(f'{metric_name_total: >{max_length + 1}} = {metric_value}')
 
 
 class LightGCN(nn.Module):
@@ -182,8 +184,10 @@ class LightGCN(nn.Module):
                 ground_truth.append(user_positive_items)
 
         preds = self.recommend(torch.tensor(users))
-        max_length = max(map(len, metrics.metric_dict.keys()))
+        max_length = max(map(len, metrics.metric_dict.keys())) + max(
+            map(lambda x: len(str(x)), config['METRICS_REPORT']))
         for metric_name, metric_func in metrics.metric_dict.items():
             for k in config['METRICS_REPORT']:
+                metric_name_total = f'{metric_name}@{k}'
                 metric_value = metric_func(preds, ground_truth, k).mean()
-                logger.info(f'{metric_name.rjust(max_length)}@{k} = {metric_value}')
+                logger.info(f'{metric_name_total: >{max_length + 1}} = {metric_value}')
