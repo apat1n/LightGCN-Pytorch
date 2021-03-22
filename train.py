@@ -1,8 +1,8 @@
 from loguru import logger
 from config import config
-from model import LightGCN
+from model import LightGCN, TopNModel
 from time import gmtime, strftime
-from dataloader import GowallaLightGCNDataset
+from dataloader import GowallaLightGCNDataset, GowallaTopNDataset
 
 if __name__ == '__main__':
     current_time = strftime("%Y-%m-%d_%H:%M:%S", gmtime())
@@ -13,3 +13,10 @@ if __name__ == '__main__':
 
     model = LightGCN(train_dataset)
     model.fit(config['TRAIN_EPOCHS'], test_dataset)
+
+    # train_dataset = GowallaTopNDataset('dataset/gowalla.train')
+    # test_dataset = GowallaTopNDataset('dataset/gowalla.test', train=False)
+    #
+    # model = TopNModel(100)
+    # model.fit(train_dataset)
+    # model.eval(test_dataset)

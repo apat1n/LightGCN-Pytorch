@@ -5,10 +5,59 @@ import scipy.sparse as sp
 from config import config
 
 
-class GowallaLightGCNDataset:
-    def __init__(self, path, train=True):
-        super().__init__()
+class GowallaDataset:
+    def __init__(self, train):
+        print('init ' + ('train' if train else 'test') + ' dataset')
 
+    def get_all_users(self):
+        raise NotImplemented
+
+    def get_user_positives(self, user):
+        raise NotImplemented
+
+    def get_user_negatives(self, user, k):
+        raise NotImplemented
+
+    @property
+    def n_users(self):
+        # TODO: parse user_list.txt
+        return 107092
+
+    @property
+    def m_items(self):
+        # TODO: parse item_list.txt
+        return 1280969
+
+
+class GowallaTopNDataset(GowallaDataset):
+    def __init__(self, path, train=True):
+        super().__init__(train)
+        self.df = pd.read_csv(path, names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
+
+        self.unique_users = self.df['userId'].unique()
+        self.user_positive_items = self.df.groupby('userId')['loc_id'].apply(list).to_dict()
+
+    def get_all_users(self):
+        return self.unique_users
+
+    def get_user_positives(self, user):
+        if user not in self.user_positive_items:
+            return []
+        return self.user_positive_items[user]
+
+    def get_user_negatives(self, user, k=10):
+        neg = []
+        positives = set(self.get_user_positives(user))
+        while len(neg) < k:
+            candidate = np.random.randint(1, self.m_items)
+            if candidate not in positives:
+                neg.append(candidate)
+        return neg
+
+
+class GowallaLightGCNDataset(GowallaDataset):
+    def __init__(self, path, train=True):
+        super().__init__(train)
         dataset = pd.read_csv(path, names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
         if train:
             # GroupBy item
@@ -76,20 +125,10 @@ class GowallaLightGCNDataset:
         neg = []
         positives = set(self.get_user_positives(user))
         while len(neg) < k:
-            candidate = np.random.randint(1, self.n_users)
+            candidate = np.random.randint(1, self.m_items)
             if candidate not in positives:
                 neg.append(candidate)
         return neg
-
-    @property
-    def n_users(self):
-        # TODO: parse user_list.txt
-        return 107092
-
-    @property
-    def m_items(self):
-        # TODO: parse item_list.txt
-        return 1280969
 
     def get_sparse_graph(self):
         """

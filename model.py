@@ -5,7 +5,37 @@ import torch.nn as nn
 from tqdm import tqdm
 from loguru import logger
 from config import config
-from dataloader import GowallaLightGCNDataset
+from dataloader import GowallaLightGCNDataset, GowallaTopNDataset
+
+
+class TopNModel:
+    def __init__(self, top_n):
+        self.top_n = top_n
+        self.top_items = []
+
+    def fit(self, dataset: GowallaTopNDataset):
+        item_counts = dataset.df.groupby('loc_id')['userId'].count().reset_index(name='count')
+        self.top_items = item_counts.sort_values('count').head(20)['loc_id'].values
+
+    def recommend(self, users: list, k: int = 20):
+        return [self.top_items[:k] for _ in users]
+
+    @torch.no_grad()
+    def eval(self, test_dataset: GowallaTopNDataset, k: int = 20):
+        users = []
+        ground_truth = []
+
+        for user in test_dataset.get_all_users():
+            user_positive_items = test_dataset.get_user_positives(user)
+            if len(user_positive_items) > 0:
+                users.append(user)
+                ground_truth.append(user_positive_items)
+
+        preds = self.recommend(users)
+        max_length = max(map(len, metrics.metric_dict.keys()))
+        for metric_name, metric_func in metrics.metric_dict.items():
+            metric_value = metric_func(preds, ground_truth, k).mean()
+            logger.info(f'{metric_name.rjust(max_length)}@{k} = {metric_value}')
 
 
 class LightGCN(nn.Module):
@@ -142,7 +172,7 @@ class LightGCN(nn.Module):
         return index.search(users_emb, k)[1]
 
     @torch.no_grad()
-    def eval(self, test_dataset, k: int = 20):
+    def eval(self, test_dataset: GowallaLightGCNDataset, k: int = 20):
         users = []
         ground_truth = []
 
