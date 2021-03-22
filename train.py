@@ -1,4 +1,5 @@
 from loguru import logger
+from config import config
 from model import LightGCN
 from time import gmtime, strftime
 from dataloader import GowallaDataset
@@ -11,4 +12,4 @@ if __name__ == '__main__':
     test_dataset = GowallaDataset('dataset/gowalla.test', train=False)
 
     model = LightGCN(train_dataset)
-    model.fit(100, test_dataset)
+    model.fit(config['TRAIN_EPOCHS'], test_dataset)
