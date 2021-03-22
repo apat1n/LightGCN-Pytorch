@@ -153,7 +153,7 @@ class LightGCN(nn.Module):
                 ground_truth.append(user_positive_items)
 
         preds = self.recommend(torch.tensor(users))
-        logger.info(f'NDCG@{k}      = {metrics.ndcg(preds, ground_truth, k).mean()}')
-        logger.info(f'Precision@{k} = {metrics.precision(preds, ground_truth, k).mean()}')
-        logger.info(f'Recall@{k}    = {metrics.recall(preds, ground_truth, k).mean()}')
-        logger.info(f'Hitrate@{k}   = {metrics.hitrate(preds, ground_truth, k).mean()}')
+        max_length = max(map(len, metrics.metric_dict.keys()))
+        for metric_name, metric_func in metrics.metric_dict.items():
+            metric_value = metric_func(preds, ground_truth, k).mean()
+            logger.info(f'{metric_name.rjust(max_length)}@{k} = {metric_value}')

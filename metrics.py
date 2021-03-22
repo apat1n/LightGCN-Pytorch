@@ -161,8 +161,9 @@ def mrr(rank, ground_truth, k=20):
 
 
 metric_dict = {
-    "Precision": precision,
-    "Recall": recall,
-    "MAP": map,
-    "NDCG": ndcg,
-    "MRR": mrr}
+    'Hitrate': hitrate,
+    'Precision': precision,
+    'Recall': recall,
+    'MAP': map,
+    'NDCG': ndcg,
+    'MRR': mrr}
