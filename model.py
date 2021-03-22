@@ -109,7 +109,7 @@ class LightGCN(nn.Module):
             pos = []
             neg = []
 
-            n_candidates = 10
+            n_candidates = config['N_NEGATIVES']
             for user in self.dataset.get_all_users():
                 user_positive_items = self.dataset.get_user_positives(user)[:n_candidates]
                 if len(user_positive_items) >= n_candidates:
