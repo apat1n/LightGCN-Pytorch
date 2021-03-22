@@ -20,8 +20,7 @@ class TopNModel:
     def recommend(self, users: list, k: int = 20):
         return [self.top_items[:k] for _ in users]
 
-    @torch.no_grad()
-    def eval(self, test_dataset: GowallaTopNDataset, k: int = 20):
+    def eval(self, test_dataset: GowallaTopNDataset):
         users = []
         ground_truth = []
 
@@ -34,8 +33,9 @@ class TopNModel:
         preds = self.recommend(users)
         max_length = max(map(len, metrics.metric_dict.keys()))
         for metric_name, metric_func in metrics.metric_dict.items():
-            metric_value = metric_func(preds, ground_truth, k).mean()
-            logger.info(f'{metric_name.rjust(max_length)}@{k} = {metric_value}')
+            for k in config['METRICS_REPORT']:
+                metric_value = metric_func(preds, ground_truth, k).mean()
+                logger.info(f'{metric_name.rjust(max_length)}@{k} = {metric_value}')
 
 
 class LightGCN(nn.Module):
@@ -156,8 +156,7 @@ class LightGCN(nn.Module):
 
             pbar.set_postfix({'bpr_loss': total_loss.item()})
             if test_dataset and (config['EVAL_EPOCHS'] == 0 or epoch % config['EVAL_EPOCHS'] == 0):
-                for k in config['METRICS_REPORT']:
-                    self.eval(test_dataset, k)
+                self.eval(test_dataset)
 
     def recommend(self, users: torch.tensor, k: int = 20):
         d = 64
@@ -172,7 +171,7 @@ class LightGCN(nn.Module):
         return index.search(users_emb, k)[1]
 
     @torch.no_grad()
-    def eval(self, test_dataset: GowallaLightGCNDataset, k: int = 20):
+    def eval(self, test_dataset: GowallaLightGCNDataset):
         users = []
         ground_truth = []
 
@@ -185,5 +184,6 @@ class LightGCN(nn.Module):
         preds = self.recommend(torch.tensor(users))
         max_length = max(map(len, metrics.metric_dict.keys()))
         for metric_name, metric_func in metrics.metric_dict.items():
-            metric_value = metric_func(preds, ground_truth, k).mean()
-            logger.info(f'{metric_name.rjust(max_length)}@{k} = {metric_value}')
+            for k in config['METRICS_REPORT']:
+                metric_value = metric_func(preds, ground_truth, k).mean()
+                logger.info(f'{metric_name.rjust(max_length)}@{k} = {metric_value}')
