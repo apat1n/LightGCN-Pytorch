@@ -5,16 +5,16 @@ import torch.nn as nn
 from tqdm import tqdm
 from loguru import logger
 from config import config
-from dataloader import BasicDataset
+from dataloader import GowallaLightGCNDataset
 
 
 class LightGCN(nn.Module):
-    def __init__(self, dataset: BasicDataset):
+    def __init__(self, dataset: GowallaLightGCNDataset):
         """
         :param dataset: dataset derived from BasicDataset
         """
         super(LightGCN, self).__init__()
-        self.dataset: BasicDataset = dataset
+        self.dataset: GowallaLightGCNDataset = dataset
         self.__init_weight()
 
     def __init_weight(self):
@@ -99,7 +99,7 @@ class LightGCN(nn.Module):
         gamma = torch.sum(inner_prod, dim=1)
         return gamma
 
-    def fit(self, n_epochs: int = 10, test_dataset: BasicDataset = None):
+    def fit(self, n_epochs: int = 10, test_dataset: GowallaLightGCNDataset = None):
         optimizer = torch.optim.Adam(self.parameters())
         pbar = tqdm(range(n_epochs))
         for epoch in pbar:

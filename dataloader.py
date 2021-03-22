@@ -1,44 +1,11 @@
-import scipy
 import torch
 import numpy as np
 import pandas as pd
-from config import config
 import scipy.sparse as sp
+from config import config
 
 
-class BasicDataset:
-    def __init__(self):
-        print("init dataset")
-
-    @property
-    def n_users(self) -> int:
-        raise NotImplementedError
-
-    @property
-    def m_items(self) -> int:
-        raise NotImplementedError
-
-    def get_sparse_graph(self) -> scipy.sparse.csr_matrix:
-        """
-        build a graph in torch.sparse.IntTensor.
-        Details in NGCF's matrix form
-        A =
-            |0,   R|
-            |R^T, 0|
-        """
-        raise NotImplementedError
-
-    def get_all_users(self):
-        raise NotImplementedError
-
-    def get_user_positives(self, user):
-        raise NotImplementedError
-
-    def get_user_negatives(self, user, k=10):
-        raise NotImplementedError
-
-
-class GowallaDataset(BasicDataset):
+class GowallaLightGCNDataset:
     def __init__(self, path, train=True):
         super().__init__()
 
@@ -116,11 +83,20 @@ class GowallaDataset(BasicDataset):
 
     @property
     def n_users(self):
+        # TODO: parse user_list.txt
         return 107092
 
     @property
     def m_items(self):
+        # TODO: parse item_list.txt
         return 1280969
 
     def get_sparse_graph(self):
+        """
+        build a graph in torch.sparse.IntTensor.
+        Details in NGCF's matrix form
+        A =
+            |0,   R|
+            |R^T, 0|
+        """
         return self.adj_matrix
