@@ -11,7 +11,7 @@ if __name__ == '__main__':
     dataset_path = dataset_dir / 'loc-gowalla_totalCheckins.txt.gz'
     if not dataset_path.exists():
         wget.download('https://snap.stanford.edu/data/loc-gowalla_totalCheckins.txt.gz',
-                      out=dataset_path, bar=print_progressbar)
+                      out=str(dataset_path), bar=print_progressbar)
 
     gowalla_dataset = pd.read_csv(
         dataset_path, sep='\t', names=['userId', 'timestamp', 'long', ' lat', 'loc_id'])
