@@ -54,7 +54,7 @@ def user_recall(rank, ground_truth, k=20):
     :param k: number of top recommended items
     :return: single recall
     """
-    return user_hitrate(rank, ground_truth, k) / len(ground_truth)
+    return user_hitrate(rank, ground_truth, k) / len(set(ground_truth))
 
 
 def recall(rank, ground_truth, k=20):
