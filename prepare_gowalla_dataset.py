@@ -15,8 +15,8 @@ if __name__ == '__main__':
                       out=str(dataset_path), bar=print_progressbar)
 
     split_date = pd.to_datetime(config['SPLIT_DATE'])
-    start_date = pd.to_datetime(split_date - pd.DateOffset(days=14))
-    end_date = pd.to_datetime(split_date + pd.DateOffset(days=7))
+    start_date = pd.to_datetime(split_date - pd.DateOffset(days=config['TRAIN_DAYS']))
+    end_date = pd.to_datetime(split_date + pd.DateOffset(days=config['TEST_DAYS']))
 
     gowalla_dataset = pd.read_csv(
         dataset_path, sep='\t', names=['userId', 'timestamp', 'long', ' lat', 'loc_id'])
