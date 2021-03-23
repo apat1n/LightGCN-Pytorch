@@ -1,4 +1,4 @@
-PyYAML==5.4.1
+PyYAML==5.3.1
 torch==1.8.0
 loguru==0.5.3
 tqdm==4.51.0
@@ -6,3 +6,6 @@ scipy==1.6.1
 faiss==1.7.0
 numpy==1.20.1
 pandas==1.2.2
+yaml==0.2.5
+wget==3.2
+tensorboard==1.15.0

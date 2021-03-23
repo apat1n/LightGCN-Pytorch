@@ -1,7 +1,7 @@
 from loguru import logger
 from config import config
-from model import LightGCN, TopNModel
 from time import gmtime, strftime
+from model import LightGCN, TopNModel
 from dataloader import GowallaLightGCNDataset, GowallaTopNDataset
 
 if __name__ == '__main__':

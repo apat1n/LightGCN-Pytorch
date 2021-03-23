@@ -4,7 +4,7 @@ import metrics
 import torch.nn as nn
 from tqdm import tqdm
 from loguru import logger
-from config import config
+from config import config, tensorboard_writer
 from dataloader import GowallaLightGCNDataset, GowallaTopNDataset
 
 
@@ -156,6 +156,10 @@ class LightGCN(nn.Module):
             total_loss.backward()
             optimizer.step()
 
+            if tensorboard_writer:
+                tensorboard_writer.add_scalar('Train/bpr_loss', loss.item())
+                tensorboard_writer.add_scalar('Train/bpr_reg_loss', reg_loss.item())
+                tensorboard_writer.add_scalar('Train/bpr_total_loss', total_loss.item())
             pbar.set_postfix({'bpr_loss': total_loss.item()})
             if test_dataset and (config['EVAL_EPOCHS'] == 0 or epoch % config['EVAL_EPOCHS'] == 0):
                 self.eval(test_dataset)
@@ -191,3 +195,5 @@ class LightGCN(nn.Module):
                 metric_name_total = f'{metric_name}@{k}'
                 metric_value = metric_func(preds, ground_truth, k).mean()
                 logger.info(f'{metric_name_total: >{max_length + 1}} = {metric_value}')
+                if tensorboard_writer:
+                    tensorboard_writer.add_scalar(f'Eval/{metric_name_total}', metric_value)
