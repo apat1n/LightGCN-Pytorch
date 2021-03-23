@@ -11,8 +11,10 @@ class TensorboardWriter(SummaryWriter):
         self.n_iter = defaultdict(lambda: 0)
 
     def add_scalar(self, tag, scalar_value, global_step=None, walltime=None):
-        super().add_scalar(tag, scalar_value, self.n_iter[tag], walltime)
-        self.n_iter[tag] += 1
+        if not global_step:
+            global_step = self.n_iter[tag]
+            self.n_iter[tag] += 1
+        super().add_scalar(tag, scalar_value, global_step, walltime)
 
 
 # problem on macOS
