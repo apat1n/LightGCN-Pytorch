@@ -151,7 +151,7 @@ class LightGCN(nn.Module):
             users, pos, neg = map(torch.tensor, [users, pos, neg])
 
             loss, reg_loss = self.bpr_loss(users, pos, neg)
-            total_loss = loss + reg_loss
+            total_loss = loss + config['BPR_REG_ALPHA'] * reg_loss
 
             total_loss.backward()
             optimizer.step()

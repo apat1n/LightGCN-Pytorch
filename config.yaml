@@ -14,6 +14,7 @@ TRAIN_EPOCHS: 1000
 # LightGCN config
 LATENT_DIM: 64
 N_LAYERS: 3
+BPR_REG_ALPHA: 0.001
 
 # TopNModel config
 TOP_N: 100
