@@ -1,5 +1,5 @@
-# LightGCN, TopNModel
-MODEL: LightGCN
+# LightGCN, TopNModel, iALS
+MODEL: iALS
 USE_TENSORBOARD: True
 
 NUM_RAT_FOR_ITEM: 5
@@ -19,7 +19,11 @@ BPR_REG_ALPHA: 0.001
 # TopNModel config
 TOP_N: 100
 
-# Gowalla dataset
+# iALS config
+ALS_N_ITERATIONS: 50
+ALS_N_FACTORS: 64
+
+# Gowalla dataset config
 SPLIT_DATE: 2009-11-01
 TRAIN_DAYS: 14
 TEST_DAYS: 7

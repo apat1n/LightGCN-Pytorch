@@ -139,3 +139,24 @@ class GowallaLightGCNDataset(GowallaDataset):
             |R^T, 0|
         """
         return self.adj_matrix
+
+
+class GowallaALSDataset(GowallaDataset):
+    def __init__(self, path, train=True):
+        super().__init__(train)
+        self.path = path
+        self.train = train
+        self.df = pd.read_csv(path, names=['userId', 'timestamp', 'long', ' lat', 'loc_id'])
+
+    def get_dataset(self):
+        if self.train:
+            users = self.df['userId'].values
+            items = self.df['loc_id'].values
+            ratings = np.ones(len(users))
+
+            user_item_data = sp.csr_matrix((ratings, (users, items)),
+                                           shape=(self.n_users, self.m_items))
+            item_user_data = user_item_data.T.tocsr()
+            return self.df, user_item_data, item_user_data
+        else:
+            return self.df
