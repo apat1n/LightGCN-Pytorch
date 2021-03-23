@@ -1,6 +1,7 @@
 import wget
 import pandas as pd
 from pathlib import Path
+from config import config
 from utils import print_progressbar
 
 if __name__ == '__main__':
@@ -15,7 +16,7 @@ if __name__ == '__main__':
 
     gowalla_dataset = pd.read_csv(
         dataset_path, sep='\t', names=['userId', 'timestamp', 'long', ' lat', 'loc_id'])
-    gowalla_dataset['timestamp'] = pd.to_datetime(gowalla_dataset['timestamp'])
+    gowalla_dataset['timestamp'] = pd.to_datetime(gowalla_dataset['timestamp']).dt.tz_localize(None)
     gowalla_dataset.sort_values('timestamp', inplace=True)
 
     new_user_ids = {k: v for v, k in enumerate(gowalla_dataset['userId'].unique())}
@@ -38,11 +39,17 @@ if __name__ == '__main__':
 
     print('item_list.txt saved')
 
-    n_train = int(len(gowalla_dataset) * 0.8)
-    n_test = len(gowalla_dataset) - n_train
+    split_date = pd.to_datetime(config['SPLIT_DATE'])
+    start_date = pd.to_datetime(split_date - pd.DateOffset(days=14))
+    end_date = pd.to_datetime(split_date + pd.DateOffset(days=7))
 
-    gowalla_train = gowalla_dataset.head(n_train)
-    gowalla_test = gowalla_dataset.tail(n_test)
+    train_filter = (gowalla_dataset['timestamp'] >= start_date) & (
+                gowalla_dataset['timestamp'] <= split_date)
+    gowalla_train = gowalla_dataset[train_filter]
+
+    test_filter = (gowalla_dataset['timestamp'] > split_date) & (
+            gowalla_dataset['timestamp'] <= end_date)
+    gowalla_test = gowalla_dataset[test_filter]
 
     gowalla_train.to_csv(dataset_dir / 'gowalla.train', index=None, header=None)
     gowalla_test.to_csv(dataset_dir / 'gowalla.test', index=None, header=None)

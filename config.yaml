@@ -18,3 +18,8 @@ BPR_REG_ALPHA: 0.001
 
 # TopNModel config
 TOP_N: 100
+
+# Gowalla dataset
+SPLIT_DATE: 2009-11-01
+TRAIN_DAYS: 14
+TEST_DAYS: 7
