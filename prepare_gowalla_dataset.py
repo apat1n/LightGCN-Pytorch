@@ -14,9 +14,16 @@ if __name__ == '__main__':
         wget.download('https://snap.stanford.edu/data/loc-gowalla_totalCheckins.txt.gz',
                       out=str(dataset_path), bar=print_progressbar)
 
+    split_date = pd.to_datetime(config['SPLIT_DATE'])
+    start_date = pd.to_datetime(split_date - pd.DateOffset(days=14))
+    end_date = pd.to_datetime(split_date + pd.DateOffset(days=7))
+
     gowalla_dataset = pd.read_csv(
         dataset_path, sep='\t', names=['userId', 'timestamp', 'long', ' lat', 'loc_id'])
     gowalla_dataset['timestamp'] = pd.to_datetime(gowalla_dataset['timestamp']).dt.tz_localize(None)
+    timestamp_filter = (gowalla_dataset['timestamp'] >= start_date) & (
+                gowalla_dataset['timestamp'] <= end_date)
+    gowalla_dataset = gowalla_dataset[timestamp_filter]
     gowalla_dataset.sort_values('timestamp', inplace=True)
 
     new_user_ids = {k: v for v, k in enumerate(gowalla_dataset['userId'].unique())}
@@ -38,10 +45,6 @@ if __name__ == '__main__':
             f.write(f'{org_id} {remap_id}\n')
 
     print('item_list.txt saved')
-
-    split_date = pd.to_datetime(config['SPLIT_DATE'])
-    start_date = pd.to_datetime(split_date - pd.DateOffset(days=14))
-    end_date = pd.to_datetime(split_date + pd.DateOffset(days=7))
 
     train_filter = (gowalla_dataset['timestamp'] >= start_date) & (
                 gowalla_dataset['timestamp'] <= split_date)
