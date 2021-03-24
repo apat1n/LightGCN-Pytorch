@@ -3,7 +3,7 @@ import implicit
 from loguru import logger
 from config import config
 from time import gmtime, strftime
-from model import LightGCN, TopNModel
+from model import LightGCN, TopNModel, TopNPersonalized
 from dataloader import GowallaLightGCNDataset, GowallaTopNDataset, GowallaALSDataset
 
 if __name__ == '__main__':
@@ -21,6 +21,13 @@ if __name__ == '__main__':
         test_dataset = GowallaTopNDataset('dataset/gowalla.test', train=False)
 
         model = TopNModel(config['TOP_N'])
+        model.fit(train_dataset)
+        model.eval(test_dataset)
+    elif config['MODEL'] == 'TopNPersonalized':
+        train_dataset = GowallaTopNDataset('dataset/gowalla.train')
+        test_dataset = GowallaTopNDataset('dataset/gowalla.test', train=False)
+
+        model = TopNPersonalized(config['TOP_N'])
         model.fit(train_dataset)
         model.eval(test_dataset)
     elif config['MODEL'] == 'iALS':

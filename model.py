@@ -4,6 +4,7 @@ import metrics
 import torch.nn as nn
 from tqdm import tqdm
 from loguru import logger
+from collections import defaultdict
 from config import config, tensorboard_writer
 from dataloader import GowallaLightGCNDataset, GowallaTopNDataset
 
@@ -19,6 +20,41 @@ class TopNModel:
 
     def recommend(self, users: list, k: int = 20):
         return [self.top_items[:k] for _ in users]
+
+    def eval(self, test_dataset: GowallaTopNDataset):
+        users = []
+        ground_truth = []
+
+        for user in test_dataset.get_all_users():
+            user_positive_items = test_dataset.get_user_positives(user)
+            if len(user_positive_items) > 0:
+                users.append(user)
+                ground_truth.append(user_positive_items)
+
+        preds = self.recommend(users)
+        max_length = max(map(len, metrics.metric_dict.keys())) + max(
+            map(lambda x: len(str(x)), config['METRICS_REPORT']))
+        for metric_name, metric_func in metrics.metric_dict.items():
+            for k in config['METRICS_REPORT']:
+                metric_name_total = f'{metric_name}@{k}'
+                metric_value = metric_func(preds, ground_truth, k).mean()
+                logger.info(f'{metric_name_total: >{max_length + 1}} = {metric_value}')
+
+
+class TopNPersonalized:
+    def __init__(self, top_n):
+        self.top_n = top_n
+        self.top_items = []
+        self.top_user_items = defaultdict(lambda: self.top_items)
+
+    def fit(self, dataset: GowallaTopNDataset):
+        item_counts = dataset.df.groupby('loc_id')['userId'].count().reset_index(name='count')
+        for user_id, df in dataset.df.groupby('userId'):
+            df.groupby('loc_id')['userId'].count().reset_index(name='count')
+        self.top_items = item_counts.sort_values('count').head(20)['loc_id'].values
+
+    def recommend(self, users: list, k: int = 20):
+        return [self.top_user_items[user][:k] for user in users]
 
     def eval(self, test_dataset: GowallaTopNDataset):
         users = []

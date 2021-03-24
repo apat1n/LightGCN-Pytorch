@@ -1,5 +1,5 @@
-# LightGCN, TopNModel, iALS
-MODEL: iALS
+# LightGCN, TopNModel, TopNPersonalized, iALS
+MODEL: TopNPersonalized
 USE_TENSORBOARD: True
 
 NUM_RAT_FOR_ITEM: 5
@@ -25,5 +25,4 @@ ALS_N_FACTORS: 64
 
 # Gowalla dataset config
 SPLIT_DATE: 2009-11-01
-TRAIN_DAYS: 14
-TEST_DAYS: 7
+TEST_DAYS: 14
