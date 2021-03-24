@@ -13,14 +13,16 @@ if __name__ == '__main__':
     if not dataset_path.exists():
         wget.download('https://snap.stanford.edu/data/loc-gowalla_totalCheckins.txt.gz',
                       out=str(dataset_path), bar=print_progressbar)
-
-    split_date = pd.to_datetime(config['SPLIT_DATE'])
-    start_date = pd.to_datetime(split_date - pd.DateOffset(days=config['TRAIN_DAYS']))
-    end_date = pd.to_datetime(split_date + pd.DateOffset(days=config['TEST_DAYS']))
-
     gowalla_dataset = pd.read_csv(
         dataset_path, sep='\t', names=['userId', 'timestamp', 'long', ' lat', 'loc_id'])
     gowalla_dataset['timestamp'] = pd.to_datetime(gowalla_dataset['timestamp']).dt.tz_localize(None)
+
+    split_date = pd.to_datetime(config['SPLIT_DATE'])
+    start_date = gowalla_dataset['timestamp'].min() \
+        if 'TRAIN_DAYS' not in config \
+        else pd.to_datetime(split_date - pd.DateOffset(days=config['TRAIN_DAYS']))
+    end_date = pd.to_datetime(split_date + pd.DateOffset(days=config['TEST_DAYS']))
+
     timestamp_filter = (gowalla_dataset['timestamp'] >= start_date) & (
                 gowalla_dataset['timestamp'] <= end_date)
     gowalla_dataset = gowalla_dataset[timestamp_filter]
