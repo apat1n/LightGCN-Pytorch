@@ -1,7 +1,10 @@
 import sys
 import metrics
+import haversine
+import pandas as pd
 from loguru import logger
 from config import config
+from dataloader import GowallaTopNDataset
 
 
 def print_progressbar(current, total, width=80):
@@ -31,4 +34,18 @@ def eval_als_model(model, user_item_data, gowalla_test):
                 metric_value = metric_func(preds, ground_truth, k).mean()
                 logger.info(f'{metric_name_total: >{max_length + 1}} = {metric_value}')
 
+    return inner
+
+
+def calc_nearest(train_dataset: GowallaTopNDataset, test_dataset: GowallaTopNDataset):
+    temp = pd.concat([train_dataset.df, test_dataset.df]).set_index('loc_id')
+    item_lat = temp['lat'].to_dict()
+    item_long = temp['long'].to_dict()
+    locations = {item: (item_long[item], item_lat[item]) for item in item_lat}
+
+    def inner(item_id, k=20):
+        loc = locations[item_id]
+        distances = [
+            (item, haversine.haversine(loc, location)) for item, location in locations.items()]
+        return list(map(lambda x: x[0], sorted(distances, key=lambda x: x[1])[:k]))
     return inner

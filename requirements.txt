@@ -10,3 +10,5 @@ yaml==0.2.5
 wget==3.2
 tensorboard==1.15.0
 implicit==0.4.0
+haversine==2.3.0
+catboost==0.24.4

@@ -148,14 +148,16 @@ class GowallaALSDataset(GowallaDataset):
         self.train = train
         self.df = pd.read_csv(path, names=['userId', 'timestamp', 'long', ' lat', 'loc_id'])
 
-    def get_dataset(self):
+    def get_dataset(self, n_users=None, m_items=None):
         if self.train:
             users = self.df['userId'].values
             items = self.df['loc_id'].values
             ratings = np.ones(len(users))
 
+            n_users = self.n_users if n_users is None else n_users
+            m_items = self.m_items if m_items is None else m_items
             user_item_data = sp.csr_matrix((ratings, (users, items)),
-                                           shape=(self.n_users, self.m_items))
+                                           shape=(n_users, m_items))
             item_user_data = user_item_data.T.tocsr()
             return self.df, user_item_data, item_user_data
         else:

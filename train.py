@@ -1,15 +1,10 @@
 import utils
 import implicit
-from loguru import logger
 from config import config
-from time import gmtime, strftime
-from model import LightGCN, TopNModel, TopNPersonalized
+from model import LightGCN, TopNModel, TopNPersonalized, TopNNearestModel
 from dataloader import GowallaLightGCNDataset, GowallaTopNDataset, GowallaALSDataset
 
 if __name__ == '__main__':
-    current_time = strftime("%Y-%m-%d_%H:%M:%S", gmtime())
-    logger.add(f'train_{current_time}.log')
-
     if config['MODEL'] == 'LightGCN':
         train_dataset = GowallaLightGCNDataset('dataset/gowalla.train')
         test_dataset = GowallaLightGCNDataset('dataset/gowalla.test', train=False)
@@ -28,6 +23,14 @@ if __name__ == '__main__':
         test_dataset = GowallaTopNDataset('dataset/gowalla.test', train=False)
 
         model = TopNPersonalized(config['TOP_N'])
+        model.fit(train_dataset)
+        model.eval(test_dataset)
+    elif config['MODEL'] == 'TopNNearestModel':
+        train_dataset = GowallaTopNDataset('dataset/gowalla.train')
+        test_dataset = GowallaTopNDataset('dataset/gowalla.test', train=False)
+
+        calc_nearest = utils.calc_nearest(train_dataset, test_dataset)
+        model = TopNNearestModel(config['TOP_N'], calc_nearest)
         model.fit(train_dataset)
         model.eval(test_dataset)
     elif config['MODEL'] == 'iALS':
