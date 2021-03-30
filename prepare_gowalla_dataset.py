@@ -20,7 +20,8 @@ if __name__ == '__main__':
             out=str(dataset_path / 'loc-gowalla_totalCheckins.txt.gz'), bar=print_progressbar)
 
     gowalla_dataset = pd.read_csv(
-        dataset_path, sep='\t', names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
+        dataset_path / 'loc-gowalla_totalCheckins.txt.gz',
+        sep='\t', names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
     gowalla_dataset['timestamp'] = pd.to_datetime(gowalla_dataset['timestamp']).dt.tz_localize(None)
 
     split_date = pd.to_datetime(config['SPLIT_DATE'])
@@ -81,7 +82,7 @@ if __name__ == '__main__':
 
     unique_users = set(gowalla_dataset['userId'].unique())
     gowalla_friendships = pd.read_csv(
-        'dataset/loc-gowalla_edges.txt.gz', sep='\t', names=['user1', 'user2'])
+        dataset_path / 'loc-gowalla_edges.txt.gz', sep='\t', names=['user1', 'user2'])
     gowalla_friendships[(gowalla_friendships['user1'].isin(unique_users)) &
                         (gowalla_friendships['user2'].isin(unique_users))] \
         .to_csv(dataset_dir / 'gowalla.friends', index=None, header=None)
