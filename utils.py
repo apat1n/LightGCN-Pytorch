@@ -37,10 +37,10 @@ def eval_als_model(model, user_item_data, gowalla_test):
     return inner
 
 
-def calc_nearest(train_dataset: GowallaTopNDataset, test_dataset: GowallaTopNDataset):
-    temp = pd.concat([train_dataset.df, test_dataset.df]).set_index('loc_id')
-    item_lat = temp['lat'].to_dict()
-    item_long = temp['long'].to_dict()
+def calc_nearest(df):
+    df = df.set_index('loc_id')
+    item_lat = df['lat'].to_dict()
+    item_long = df['long'].to_dict()
     locations = {item: (item_long[item], item_lat[item]) for item in item_lat}
 
     def inner(item_id, k=20):

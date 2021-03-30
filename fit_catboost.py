@@ -1,6 +1,6 @@
 import pandas as pd
 from collections import defaultdict
-from catboost import CatBoostClassifier, Pool
+from catboost import CatBoostClassifier, Pool, CatBoost
 from sklearn.model_selection import train_test_split
 
 if __name__ == '__main__':
@@ -53,25 +53,41 @@ if __name__ == '__main__':
     candidates_dataset['long'] = candidates_dataset['itemId'].map(item_long)
     candidates_dataset['lat'] = candidates_dataset['itemId'].map(item_lat)
     candidates_dataset['target'] = candidates_target_values
+    candidates_dataset.drop_duplicates(['userId', 'itemId'], inplace=True)
 
     print(candidates_dataset['target'].value_counts())
 
     train_df, eval_df = train_test_split(candidates_dataset, test_size=0.2)
+    train_df.sort_values('userId', inplace=True)
+    eval_df.sort_values('userId', inplace=True)
 
     train_pool = Pool(
         train_df.drop(['userId', 'itemId', 'target'], axis=1),
-        train_df['target']
+        train_df['target'],
+        group_id=train_df['userId']
     )
     eval_pool = Pool(
         eval_df.drop(['userId', 'itemId', 'target'], axis=1),
-        eval_df['target']
+        eval_df['target'],
+        group_id=eval_df['userId']
     )
 
-    model = CatBoostClassifier(
-        iterations=5000, loss_function='Logloss', eval_metric='AUC', verbose=10)
+    # model = CatBoostClassifier(
+    #     iterations=2000, loss_function='Logloss', eval_metric='AUC', verbose=10)
+    # model.fit(train_pool, eval_set=eval_pool)
+    # model.save_model('catboost.cbm')
+
+    # YetiRank for ranking works better
+    parameters = {
+        'iterations': 500,
+        'loss_function': 'YetiRank',
+        'eval_metric': 'AUC',
+        'verbose': 10,
+    }
+    model = CatBoost(parameters)
     model.fit(train_pool, eval_set=eval_pool)
     model.save_model('catboost.cbm')
 
     train_df['preds'] = model.predict(train_pool)
     print(len(train_df[(train_df['preds'] == 0) & (train_df['target'] == 1)]))
-    print(len(train_df[train_df['target'] == 1]))
+    print(train_df)

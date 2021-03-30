@@ -245,6 +245,7 @@ class LightGCN(nn.Module):
             if test_dataset and (config['EVAL_EPOCHS'] == 0 or epoch % config['EVAL_EPOCHS'] == 0):
                 self.eval(test_dataset)
 
+    @torch.no_grad()
     def recommend(self, users: torch.tensor, k: int = 20):
         d = 64
 

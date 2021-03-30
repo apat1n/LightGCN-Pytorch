@@ -7,12 +7,8 @@ from catboost import CatBoostClassifier
 if __name__ == '__main__':
     candidates_dataset = pd.read_csv('catboost_eval_dataset.csv', names=['userId', 'itemId'])
 
-    gowalla_train = pd.read_csv('dataset/gowalla.train',
+    gowalla_train = pd.read_csv('dataset/gowalla.traintest',
                                 names=['userId', 'timestamp', 'long', 'lat', 'itemId'])
-    gowalla_test = pd.read_csv('dataset/gowalla.test',
-                               names=['userId', 'timestamp', 'long', 'lat', 'itemId'])
-    gowalla_train = pd.concat([gowalla_train, gowalla_test])
-    del gowalla_test
 
     gowalla_val = pd.read_csv('dataset/gowalla.val',
                               names=['userId', 'timestamp', 'long', 'lat', 'itemId'])
@@ -47,28 +43,36 @@ if __name__ == '__main__':
     candidates_dataset['long'] = candidates_dataset['itemId'].map(item_long)
     candidates_dataset['lat'] = candidates_dataset['itemId'].map(item_lat)
 
-    # train_pool = Pool(
-    #     train_df.drop(['userId', 'itemId', 'target'], axis=1),
-    #     train_df['target']
-    # )
-    # eval_pool = Pool(
-    #     eval_df.drop(['userId', 'itemId', 'target'], axis=1),
-    #     eval_df['target']
-    # )
-    #
     model = CatBoostClassifier(
         iterations=5000, loss_function='Logloss', eval_metric='AUC', verbose=10)
     model.load_model('catboost.cbm')
     candidates_dataset['target_pred'] = model.predict_proba(
         candidates_dataset.drop(['userId', 'itemId'], axis=1))[:, 1]
 
-    hitrates = []
+    k = 20
+    catboost_hitrates = []
     for user, df in candidates_dataset.groupby('userId'):
-        k = 20
-        preds = df.sort_values('target_pred').head(k)['itemId'].values
+        preds = df.sort_values('target_pred', ascending=False).head(k)['itemId'].values
         ground_truth = gowalla_val[gowalla_val['userId'] == user]['itemId'].values
         if len(ground_truth) > 0:
-            # print(preds, ground_truth)
-            # print(user, metrics.user_hitrate(preds, ground_truth))
-            hitrates.append(metrics.user_hitrate(preds, ground_truth))
-    print(np.mean(hitrates))
+            catboost_hitrates.append(metrics.user_hitrate(preds, ground_truth))
+
+    als_hitrates = []
+    als_candidates = pd.read_csv('als_candidates.csv', names=['userId', 'itemId'])
+    for user, df in als_candidates.groupby('userId'):
+        preds = df.head(k)['itemId'].values
+        ground_truth = gowalla_val[gowalla_val['userId'] == user]['itemId'].values
+        if len(ground_truth) > 0:
+            als_hitrates.append(metrics.user_hitrate(preds, ground_truth))
+
+    topn_hitrates = []
+    topn_candidates = pd.read_csv('topn_candidates.csv', names=['userId', 'itemId'])
+    for user, df in topn_candidates.groupby('userId'):
+        preds = df.head(k)['itemId'].values
+        ground_truth = gowalla_val[gowalla_val['userId'] == user]['itemId'].values
+        if len(ground_truth) > 0:
+            topn_hitrates.append(metrics.user_hitrate(preds, ground_truth))
+
+    print(f'als hitrate@{k}: {np.mean(als_hitrates)}')
+    print(f'topn hitrate@{k}: {np.mean(topn_hitrates)}')
+    print(f'catboost hitrate@{k}: {np.mean(catboost_hitrates)}')

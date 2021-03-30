@@ -6,8 +6,10 @@ from config import config
 
 
 class GowallaDataset:
-    def __init__(self, train):
+    def __init__(self, train, path='dataset'):
         print('init ' + ('train' if train else 'test') + ' dataset')
+        self.n_users_ = int(open(f'{path}/user_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
+        self.m_items_ = int(open(f'{path}/item_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
 
     def get_all_users(self):
         raise NotImplemented
@@ -20,13 +22,11 @@ class GowallaDataset:
 
     @property
     def n_users(self):
-        # TODO: parse user_list.txt
-        return 107092
+        return self.n_users_ if self.m_items_ else 107092
 
     @property
     def m_items(self):
-        # TODO: parse item_list.txt
-        return 1280969
+        return self.m_items_ if self.m_items_ else 1280969
 
 
 class GowallaTopNDataset(GowallaDataset):
