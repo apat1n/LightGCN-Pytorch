@@ -70,13 +70,13 @@ if __name__ == '__main__':
             gowalla_dataset['timestamp'] <= end_date)
         gowalla_val = gowalla_dataset[val_filter]
         pd.concat([gowalla_train, gowalla_test]).to_csv(
-            dataset_dir / 'gowalla.traintest', index=None, header=None)
-        gowalla_val.to_csv(dataset_dir / 'gowalla.val', index=None, header=None)
+            dataset_path / 'gowalla.traintest', index=None, header=None)
+        gowalla_val.to_csv(dataset_path / 'gowalla.val', index=None, header=None)
 
-    gowalla_train.to_csv(dataset_dir / 'gowalla.train', index=None, header=None)
-    gowalla_test.to_csv(dataset_dir / 'gowalla.test', index=None, header=None)
+    gowalla_train.to_csv(dataset_path / 'gowalla.train', index=None, header=None)
+    gowalla_test.to_csv(dataset_path / 'gowalla.test', index=None, header=None)
     gowalla_dataset.loc[:, ['loc_id', 'long', 'lat']] \
-        .to_csv(dataset_dir / 'gowalla.locations', index=None, header=None)
+        .to_csv(dataset_path / 'gowalla.locations', index=None, header=None)
 
     print('dataset splits saved')
 
@@ -85,6 +85,6 @@ if __name__ == '__main__':
         dataset_path / 'loc-gowalla_edges.txt.gz', sep='\t', names=['user1', 'user2'])
     gowalla_friendships[(gowalla_friendships['user1'].isin(unique_users)) &
                         (gowalla_friendships['user2'].isin(unique_users))] \
-        .to_csv(dataset_dir / 'gowalla.friends', index=None, header=None)
+        .to_csv(dataset_path / 'gowalla.friends', index=None, header=None)
 
     print('dataset friendships saved')
