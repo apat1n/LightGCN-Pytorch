@@ -9,12 +9,16 @@ if __name__ == '__main__':
     if not dataset_dir.exists():
         dataset_dir.mkdir(parents=True, exist_ok=True)
 
-    dataset_path = dataset_dir / 'loc-gowalla_totalCheckins.txt.gz'
+    dataset_path = dataset_dir / 'gowalla'
     if not dataset_path.exists():
-        wget.download('https://snap.stanford.edu/data/loc-gowalla_edges.txt.gz',
-                      out=str(dataset_path), bar=print_progressbar)
-        wget.download('https://snap.stanford.edu/data/loc-gowalla_totalCheckins.txt.gz',
-                      out=str(dataset_path), bar=print_progressbar)
+        dataset_path.mkdir(parents=True, exist_ok=True)
+        wget.download(
+            'https://snap.stanford.edu/data/loc-gowalla_edges.txt.gz',
+            out=str(dataset_path / 'loc-gowalla_edges.txt.gz'), bar=print_progressbar)
+        wget.download(
+            'https://snap.stanford.edu/data/loc-gowalla_totalCheckins.txt.gz',
+            out=str(dataset_path / 'loc-gowalla_totalCheckins.txt.gz'), bar=print_progressbar)
+
     gowalla_dataset = pd.read_csv(
         dataset_path, sep='\t', names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
     gowalla_dataset['timestamp'] = pd.to_datetime(gowalla_dataset['timestamp']).dt.tz_localize(None)

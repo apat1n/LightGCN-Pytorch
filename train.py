@@ -1,12 +1,13 @@
 import utils
 import implicit
 import pandas as pd
+from pathlib import Path
 from config import config
 from model import LightGCN, TopNModel, TopNPersonalized, TopNNearestModel
 from dataloader import GowallaLightGCNDataset, GowallaTopNDataset, GowallaALSDataset
 
 if __name__ == '__main__':
-    dataset = config['DATASET']
+    dataset = Path(config['DATASET']) / 'loc-gowalla_totalCheckins.txt.gz'
     if config['MODEL'] == 'LightGCN':
         train_dataset = GowallaLightGCNDataset(f'dataset/{dataset}.train')
         test_dataset = GowallaLightGCNDataset(f'dataset/{dataset}.test', train=False)
