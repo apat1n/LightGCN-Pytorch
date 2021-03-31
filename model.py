@@ -186,7 +186,6 @@ class LightGCN(nn.Module):
         neg_emb_ego = self.embedding_item(neg_items)
         return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
 
-    # TODO: sample negatives
     def bpr_loss(self, users: torch.tensor, pos: torch.tensor, neg: torch.tensor):
         (users_emb, pos_emb, neg_emb,
          userEmb0, posEmb0, negEmb0) = self.get_embedding(users.long(), pos.long(), neg.long())

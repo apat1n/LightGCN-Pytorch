@@ -8,8 +8,9 @@ from config import config
 class GowallaDataset:
     def __init__(self, train, path='dataset'):
         print('init ' + ('train' if train else 'test') + ' dataset')
-        self.n_users_ = int(open(f'{path}/user_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
-        self.m_items_ = int(open(f'{path}/item_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
+        self.n_users_, self.m_items_ = None, None
+        # self.n_users_ = int(open(f'{path}/user_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
+        # self.m_items_ = int(open(f'{path}/item_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
 
     def get_all_users(self):
         raise NotImplemented
@@ -22,11 +23,11 @@ class GowallaDataset:
 
     @property
     def n_users(self):
-        return self.n_users_ if self.m_items_ else 107092
+        return self.n_users_
 
     @property
     def m_items(self):
-        return self.m_items_ if self.m_items_ else 1280969
+        return self.m_items_
 
 
 class GowallaTopNDataset(GowallaDataset):
@@ -59,27 +60,17 @@ class GowallaLightGCNDataset(GowallaDataset):
     def __init__(self, path, train=True):
         super().__init__(train)
         dataset = pd.read_csv(path, names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
-        if train:
-            # GroupBy item
-            temp = dataset.groupby('loc_id').agg({'userId': 'count'}).reset_index()
-            # Treshold item ratings
-            items = temp.loc[temp.userId > config['NUM_RAT_FOR_ITEM']].loc_id
-            dataset = dataset.loc[dataset.loc_id.isin(items)].copy()
-            # GroupBy user
-            temp = dataset.groupby('userId').agg({'loc_id': 'count'}).reset_index()
-            # Threshold user ratings
-            users = temp.loc[temp.loc_id > config['NUM_RAT_FOR_USER']].userId
-            dataset = dataset.loc[dataset.userId.isin(users)].copy()
 
         dataset['feed'] = 1
         users = dataset['userId']
-        self.unique_users = users.unique()
         items = dataset['loc_id']
         feed = dataset['feed']
+        self.n_users_ = users.max() + 1
+        self.m_items_ = items.max() + 1
+        self.unique_users = users.unique()
         self.user_positive_items = dataset.groupby('userId')['loc_id'].apply(list).to_dict()
         del dataset
 
-        # suppose user and item ids are begins from 1
         n_nodes = self.n_users + self.m_items
 
         # build scipy sparse matrix
@@ -92,13 +83,14 @@ class GowallaLightGCNDataset(GowallaDataset):
         adj_mat = tmp_adj + tmp_adj.T
 
         # normalize matrix
-        # TODO: not only rowsum, also colsum
         rowsum = np.array(adj_mat.sum(1))
         d_inv = np.power(rowsum, -0.5).flatten()
         d_inv[np.isinf(d_inv)] = 0.
         d_mat_inv = sp.diags(d_inv)
 
+        # normalize by user counts
         norm_adj_tmp = d_mat_inv.dot(adj_mat)
+        # normalize by item counts
         normalized_adj_matrix = norm_adj_tmp.dot(d_mat_inv)
 
         # convert to torch sparse matrix

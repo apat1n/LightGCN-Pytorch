@@ -1,13 +1,16 @@
 import os
 import yaml
+from pathlib import Path
 from loguru import logger
 from time import gmtime, strftime
 from collections import defaultdict
 from torch.utils.tensorboard import SummaryWriter
 
 
+if not os.path.isdir('logs'):
+    os.mkdir('logs')
 current_time = strftime("%Y-%m-%d_%H:%M:%S", gmtime())
-logger.add(f'train_{current_time}.log')
+logger.add(f'logs/train_{current_time}.log')
 
 
 class TensorboardWriter(SummaryWriter):
