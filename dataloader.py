@@ -8,9 +8,8 @@ from config import config
 class GowallaDataset:
     def __init__(self, train, path='dataset'):
         print('init ' + ('train' if train else 'test') + ' dataset')
-        self.n_users_, self.m_items_ = None, None
-        # self.n_users_ = int(open(f'{path}/user_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
-        # self.m_items_ = int(open(f'{path}/item_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
+        self.n_users_ = int(open(f'{path}/user_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
+        self.m_items_ = int(open(f'{path}/item_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
 
     def get_all_users(self):
         raise NotImplemented
@@ -65,8 +64,6 @@ class GowallaLightGCNDataset(GowallaDataset):
         users = dataset['userId']
         items = dataset['loc_id']
         feed = dataset['feed']
-        self.n_users_ = users.max() + 1
-        self.m_items_ = items.max() + 1
         self.unique_users = users.unique()
         self.user_positive_items = dataset.groupby('userId')['loc_id'].apply(list).to_dict()
         del dataset
