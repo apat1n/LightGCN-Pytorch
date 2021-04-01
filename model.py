@@ -1,10 +1,12 @@
 import faiss
 import torch
+import utils
 import metrics
 import torch.nn as nn
 from tqdm import tqdm
 from loguru import logger
 from collections import defaultdict
+from torch.utils.data import DataLoader
 from config import config, tensorboard_writer
 from dataloader import GowallaLightGCNDataset, GowallaTopNDataset
 
@@ -214,35 +216,53 @@ class LightGCN(nn.Module):
     def fit(self, n_epochs: int = 10, test_dataset: GowallaLightGCNDataset = None):
         optimizer = torch.optim.Adam(self.parameters())
         pbar = tqdm(range(n_epochs))
+        dataloader = DataLoader(
+            self.dataset, batch_size=config['BATCH_SIZE'],
+            shuffle=True, collate_fn=utils.collate_function)
         for epoch in pbar:
-            optimizer.zero_grad()
+            for users, pos, neg in dataloader:
+                optimizer.zero_grad()
+                loss, reg_loss = self.bpr_loss(users, pos, neg)
+                total_loss = loss + config['BPR_REG_ALPHA'] * reg_loss
 
-            users = []
-            pos = []
-            neg = []
+                total_loss.backward()
+                optimizer.step()
 
-            n_candidates = config['N_NEGATIVES']
-            for user in self.dataset.get_all_users():
-                user_positive_items = self.dataset.get_user_positives(user)[:n_candidates]
-                if len(user_positive_items) >= n_candidates:
-                    users.extend([user for _ in range(n_candidates)])
-                    pos.extend(user_positive_items[:n_candidates])
-                    neg.extend(self.dataset.get_user_negatives(user, n_candidates))
-            users, pos, neg = map(torch.tensor, [users, pos, neg])
+                if tensorboard_writer:
+                    tensorboard_writer.add_scalar('Train/bpr_loss', loss.item())
+                    tensorboard_writer.add_scalar('Train/bpr_reg_loss', reg_loss.item())
+                    tensorboard_writer.add_scalar('Train/bpr_total_loss', total_loss.item())
+                pbar.set_postfix({'bpr_loss': total_loss.item()})
 
-            loss, reg_loss = self.bpr_loss(users, pos, neg)
-            total_loss = loss + config['BPR_REG_ALPHA'] * reg_loss
-
-            total_loss.backward()
-            optimizer.step()
-
-            if tensorboard_writer:
-                tensorboard_writer.add_scalar('Train/bpr_loss', loss.item(), epoch)
-                tensorboard_writer.add_scalar('Train/bpr_reg_loss', reg_loss.item(), epoch)
-                tensorboard_writer.add_scalar('Train/bpr_total_loss', total_loss.item(), epoch)
-            pbar.set_postfix({'bpr_loss': total_loss.item()})
             if test_dataset and (config['EVAL_EPOCHS'] == 0 or epoch % config['EVAL_EPOCHS'] == 0):
                 self.eval(test_dataset)
+
+            # users = []
+            # pos = []
+            # neg = []
+            #
+            # n_candidates = config['N_NEGATIVES']
+            # for user in self.dataset.get_all_users():
+            #     user_positive_items = self.dataset.get_user_positives(user)[:n_candidates]
+            #     if len(user_positive_items) >= n_candidates:
+            #         users.extend([user for _ in range(n_candidates)])
+            #         pos.extend(user_positive_items[:n_candidates])
+            #         neg.extend(self.dataset.get_user_negatives(user, n_candidates))
+            # users, pos, neg = map(torch.tensor, [users, pos, neg])
+            #
+            # loss, reg_loss = self.bpr_loss(users, pos, neg)
+            # total_loss = loss + config['BPR_REG_ALPHA'] * reg_loss
+            #
+            # total_loss.backward()
+            # optimizer.step()
+            #
+            # if tensorboard_writer:
+            #     tensorboard_writer.add_scalar('Train/bpr_loss', loss.item(), epoch)
+            #     tensorboard_writer.add_scalar('Train/bpr_reg_loss', reg_loss.item(), epoch)
+            #     tensorboard_writer.add_scalar('Train/bpr_total_loss', total_loss.item(), epoch)
+            # pbar.set_postfix({'bpr_loss': total_loss.item()})
+            # if test_dataset and (config['EVAL_EPOCHS'] == 0 or epoch % config['EVAL_EPOCHS'] == 0):
+            #     self.eval(test_dataset)
 
     @torch.no_grad()
     def recommend(self, users: torch.tensor, k: int = 20):

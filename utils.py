@@ -1,10 +1,10 @@
 import sys
+import torch
 import metrics
 import haversine
-import pandas as pd
 from loguru import logger
-from config import config
-from dataloader import GowallaTopNDataset
+from collections import defaultdict
+from torch.utils.tensorboard import SummaryWriter
 
 
 def print_progressbar(current, total, width=80):
@@ -14,7 +14,21 @@ def print_progressbar(current, total, width=80):
     sys.stdout.flush()
 
 
+class TensorboardWriter(SummaryWriter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.n_iter = defaultdict(lambda: 0)
+
+    def add_scalar(self, tag, scalar_value, global_step=None, walltime=None):
+        if not global_step:
+            global_step = self.n_iter[tag]
+            self.n_iter[tag] += 1
+        super().add_scalar(tag, scalar_value, global_step, walltime)
+
+
 def eval_als_model(model, user_item_data, gowalla_test):
+    from config import config
+
     def inner(iteration, elapsed):
         preds = []
         ground_truth = []
@@ -49,3 +63,15 @@ def calc_nearest(df):
             (item, haversine.haversine(loc, location)) for item, location in locations.items()]
         return list(map(lambda x: x[0], sorted(distances, key=lambda x: x[1])[:k]))
     return inner
+
+
+def collate_function(batch):
+    users = []
+    pos_items = []
+    neg_items = []
+    for user, pos, neg in batch:
+        users.extend([user for _ in pos])
+        pos_items.extend(pos)
+        neg_items.extend(neg)
+    return list(map(torch.tensor, [users, pos_items, neg_items]))
+

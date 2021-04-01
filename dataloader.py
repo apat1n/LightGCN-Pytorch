@@ -2,10 +2,10 @@ import torch
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
-from config import config
+from torch.utils.data import Dataset
 
 
-class GowallaDataset:
+class GowallaDataset(Dataset):
     def __init__(self, train, path='dataset'):
         print('init ' + ('train' if train else 'test') + ' dataset')
         self.n_users_ = int(open(f'{path}/user_list.txt').readlines()[-1][:-1].split(' ')[1]) + 1
@@ -27,6 +27,12 @@ class GowallaDataset:
     @property
     def m_items(self):
         return self.m_items_
+
+    def __len__(self):
+        return self.n_users_
+
+    def __getitem__(self, idx):
+        raise NotImplemented
 
 
 class GowallaTopNDataset(GowallaDataset):
@@ -56,8 +62,10 @@ class GowallaTopNDataset(GowallaDataset):
 
 
 class GowallaLightGCNDataset(GowallaDataset):
-    def __init__(self, path, train=True):
+    def __init__(self, path, train=True, n_negatives: int = 10):
         super().__init__(train)
+        self.n_negatives = n_negatives
+
         dataset = pd.read_csv(path, names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
 
         dataset['feed'] = 1
@@ -128,6 +136,21 @@ class GowallaLightGCNDataset(GowallaDataset):
             |R^T, 0|
         """
         return self.adj_matrix
+
+    def __len__(self):
+        return len(self.unique_users)
+
+    def __getitem__(self, idx):
+        """
+        returns user, pos_items, neg_items
+
+        :param idx: index of user from unique_users
+        :return:
+        """
+        user = self.unique_users[idx]
+        pos = np.random.choice(self.get_user_positives(user), self.n_negatives)
+        neg = self.get_user_negatives(user, self.n_negatives)
+        return user, pos, neg
 
 
 class GowallaALSDataset(GowallaDataset):
