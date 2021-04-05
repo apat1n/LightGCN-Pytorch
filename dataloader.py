@@ -66,8 +66,7 @@ class GowallaLightGCNDataset(GowallaDataset):
         super().__init__(train)
         self.n_negatives = n_negatives
 
-        # dataset = pd.read_csv(path, names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
-        dataset = pd.read_csv(path, names=['userId', 'loc_id'])
+        dataset = pd.read_csv(path, names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
 
         dataset['feed'] = 1
         users = dataset['userId']
