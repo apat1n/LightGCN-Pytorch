@@ -66,7 +66,8 @@ class GowallaLightGCNDataset(GowallaDataset):
         super().__init__(train)
         self.n_negatives = n_negatives
 
-        dataset = pd.read_csv(path, names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
+        # dataset = pd.read_csv(path, names=['userId', 'timestamp', 'long', 'lat', 'loc_id'])
+        dataset = pd.read_csv(path, names=['userId', 'loc_id'])
 
         dataset['feed'] = 1
         users = dataset['userId']
@@ -129,10 +130,8 @@ class GowallaLightGCNDataset(GowallaDataset):
 
     def get_sparse_graph(self):
         """
-        build a graph in torch.sparse.IntTensor.
-        Details in NGCF's matrix form
-        A =
-            |0,   R|
+        Returns a grapth in torch.sparse_coo_tensor.
+        A = |0,   R|
             |R^T, 0|
         """
         return self.adj_matrix

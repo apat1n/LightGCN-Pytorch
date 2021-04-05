@@ -9,8 +9,8 @@ from dataloader import GowallaLightGCNDataset, GowallaTopNDataset, GowallaALSDat
 if __name__ == '__main__':
     dataset_path = Path('dataset') / config['DATASET'] / config['DATASET']
     if config['MODEL'] == 'LightGCN':
-        train_dataset = GowallaLightGCNDataset(f'{dataset_path}.train')
-        test_dataset = GowallaLightGCNDataset(f'{dataset_path}.test', train=False)
+        train_dataset = GowallaLightGCNDataset(f'{dataset_path}_custom.train')
+        test_dataset = GowallaLightGCNDataset(f'{dataset_path}_custom.test', train=False)
 
         model = LightGCN(train_dataset)
         model.fit(config['TRAIN_EPOCHS'], test_dataset)

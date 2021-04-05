@@ -74,4 +74,3 @@ def collate_function(batch):
         pos_items.extend(pos)
         neg_items.extend(neg)
     return list(map(torch.tensor, [users, pos_items, neg_items]))
-

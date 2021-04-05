@@ -155,7 +155,7 @@ class LightGCN(nn.Module):
 
     def computer(self):
         """
-        propagate methods for lightGCN
+        Propagate high-hop embeddings for lightGCN
         """
         users_emb = self.embedding_user.weight
         items_emb = self.embedding_item.weight
@@ -167,7 +167,7 @@ class LightGCN(nn.Module):
             layer_embeddings.append(all_emb)
         layer_embeddings = torch.stack(layer_embeddings, dim=1)
 
-        final_embeddings = torch.mean(layer_embeddings, dim=1)  # output is mean of all layers
+        final_embeddings = layer_embeddings.mean(dim=1)  # output is mean of all layers
         users, items = torch.split(final_embeddings, [self.num_users, self.num_items])
         return users, items
 
@@ -189,6 +189,13 @@ class LightGCN(nn.Module):
         return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
 
     def bpr_loss(self, users: torch.tensor, pos: torch.tensor, neg: torch.tensor):
+        """
+        Calculate BPR loss as - sum ln(sigma(pos_scores - neg_scores)) + L2 norm
+        :param users: users for which calculate loss
+        :param pos: positive items
+        :param neg: negative items
+        :return:
+        """
         (users_emb, pos_emb, neg_emb,
          userEmb0, posEmb0, negEmb0) = self.get_embedding(users.long(), pos.long(), neg.long())
         reg_loss = (1 / 2) * (userEmb0.norm(2).pow(2) +
@@ -211,10 +218,15 @@ class LightGCN(nn.Module):
         users_emb = all_users[users]
         items_emb = all_items[items]
         inner_prod = torch.mul(users_emb, items_emb)
-        gamma = torch.sum(inner_prod, dim=1)
-        return gamma
+        return torch.sum(inner_prod, dim=1).sigmoid()
 
-    def fit(self, n_epochs: int = 10, test_dataset: GowallaLightGCNDataset = None):
+    def fit(self, n_epochs: int = 10, dataset: GowallaLightGCNDataset = None):
+        """
+        Fitting model with BPR loss.
+        :param n_epochs: number of epochs to fit model
+        :param dataset: dataset for training
+        :return:
+        """
         optimizer = torch.optim.Adam(self.parameters())
         pbar = tqdm(range(n_epochs))
         dataloader = DataLoader(
@@ -235,8 +247,8 @@ class LightGCN(nn.Module):
                     tensorboard_writer.add_scalar('Train/bpr_total_loss', total_loss.item())
                 pbar.set_postfix({'bpr_loss': total_loss.item()})
 
-            if test_dataset and config['EVAL_EPOCHS'] > 0 and epoch % config['EVAL_EPOCHS'] == 0:
-                self.eval(test_dataset)
+            if dataset and config['EVAL_EPOCHS'] > 0 and epoch % config['EVAL_EPOCHS'] == 0:
+                self.eval(dataset)
 
     @torch.no_grad()
     def recommend(self, users: torch.tensor, k: int = 20):
@@ -246,8 +258,13 @@ class LightGCN(nn.Module):
         users_emb = all_users[users.long()].numpy()
         items_emb = all_items.numpy()
 
-        index = faiss.IndexHNSWPQ(d, 4, 32)
-        index.train(items_emb)
+        # faiss cosine distance index
+        # index = faiss.IndexHNSWPQ(d, 4, 32)
+        # index.train(items_emb)
+        # index.add(items_emb)
+
+        # faiss L2 index
+        index = faiss.IndexFlatL2(d)
         index.add(items_emb)
         return index.search(users_emb, k)[1]
 
