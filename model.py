@@ -258,13 +258,7 @@ class LightGCN(nn.Module):
         users_emb = all_users[users.long()].numpy()
         items_emb = all_items.numpy()
 
-        # faiss cosine distance index
-        # index = faiss.IndexHNSWPQ(d, 4, 32)
-        # index.train(items_emb)
-        # index.add(items_emb)
-
-        # faiss L2 index
-        index = faiss.IndexFlatL2(d)
+        index = faiss.IndexFlatIP(d)
         index.add(items_emb)
         return index.search(users_emb, k)[1]
 
