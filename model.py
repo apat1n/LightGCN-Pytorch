@@ -18,7 +18,8 @@ class TopNModel:
 
     def fit(self, dataset: GowallaTopNDataset):
         item_counts = dataset.df.groupby('loc_id')['userId'].count().reset_index(name='count')
-        self.top_items = item_counts.sort_values('count', ascending=False).head(self.top_n)['loc_id'].values
+        self.top_items = item_counts.sort_values('count', ascending=False).head(self.top_n)[
+            'loc_id'].values
 
     def recommend(self, users: list, k: int = 20):
         return [self.top_items[:k] for _ in users]
@@ -29,7 +30,7 @@ class TopNModel:
 
         for user in test_dataset.get_all_users():
             user_positive_items = test_dataset.get_user_positives(user)
-            if len(user_positive_items) > 0:
+            if user_positive_items:
                 users.append(user)
                 ground_truth.append(user_positive_items)
 
@@ -67,7 +68,7 @@ class TopNPersonalized:
 
         for user in test_dataset.get_all_users():
             user_positive_items = test_dataset.get_user_positives(user)
-            if len(user_positive_items) > 0:
+            if user_positive_items:
                 users.append(user)
                 ground_truth.append(user_positive_items)
 
@@ -109,7 +110,7 @@ class TopNNearestModel:
 
         for user in test_dataset.get_all_users():
             user_positive_items = test_dataset.get_user_positives(user)
-            if len(user_positive_items) > 0:
+            if user_positive_items:
                 users.append(user)
                 ground_truth.append(user_positive_items)
 
@@ -130,13 +131,17 @@ class LightGCN(nn.Module):
         """
         super(LightGCN, self).__init__()
         self.dataset: GowallaLightGCNDataset = dataset
-        self.__init_weight()
-
-    def __init_weight(self):
         self.num_users = self.dataset.n_users
         self.num_items = self.dataset.m_items
         self.latent_dim = config['LATENT_DIM']
         self.n_layers = config['N_LAYERS']
+        self.__init_weight()
+
+    def __init_weight(self):
+        """
+        Initialize embeddings with normal distribution
+        :return:
+        """
         self.embedding_user = torch.nn.Embedding(
             num_embeddings=self.num_users, embedding_dim=self.latent_dim)
         self.embedding_item = torch.nn.Embedding(
@@ -153,9 +158,10 @@ class LightGCN(nn.Module):
         self.Graph = self.dataset.get_sparse_graph()
         print('LightGCN is ready to go')
 
-    def computer(self):
+    def computer(self) -> tuple:
         """
         Propagate high-hop embeddings for lightGCN
+        :return: user embeddings, item embeddings
         """
         users_emb = self.embedding_user.weight
         items_emb = self.embedding_item.weight
@@ -171,14 +177,20 @@ class LightGCN(nn.Module):
         users, items = torch.split(final_embeddings, [self.num_users, self.num_items])
         return users, items
 
-    def get_users_rating(self, users: torch.tensor):
+    def get_users_rating(self, users: torch.tensor) -> torch.tensor:
+        """
+        Compute item ratings for users
+        :param users: user ids for which compute ratings
+        :return:
+        """
         all_users, all_items = self.computer()
         users_emb = all_users[users.long()]
         items_emb = all_items
         rating = torch.matmul(users_emb, items_emb.t())
         return rating
 
-    def get_embedding(self, users: torch.tensor, pos_items: torch.tensor, neg_items: torch.tensor):
+    def get_embedding(self, users: torch.tensor, pos_items: torch.tensor,
+                      neg_items: torch.tensor) -> tuple:
         all_users, all_items = self.computer()
         users_emb = all_users[users]
         pos_emb = all_items[pos_items]
@@ -188,13 +200,13 @@ class LightGCN(nn.Module):
         neg_emb_ego = self.embedding_item(neg_items)
         return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
 
-    def bpr_loss(self, users: torch.tensor, pos: torch.tensor, neg: torch.tensor):
+    def bpr_loss(self, users: torch.tensor, pos: torch.tensor, neg: torch.tensor) -> tuple:
         """
         Calculate BPR loss as - sum ln(sigma(pos_scores - neg_scores)) + L2 norm
         :param users: users for which calculate loss
         :param pos: positive items
         :param neg: negative items
-        :return:
+        :return: loss, reg_loss
         """
         (users_emb, pos_emb, neg_emb,
          userEmb0, posEmb0, negEmb0) = self.get_embedding(users.long(), pos.long(), neg.long())
@@ -206,9 +218,7 @@ class LightGCN(nn.Module):
         neg_scores = torch.mul(users_emb, neg_emb)
         neg_scores = torch.sum(neg_scores, dim=1)
 
-        # loss = torch.mean(nn.Softplus()(neg_scores - pos_scores))
         loss = - (pos_scores - neg_scores).sigmoid().log().mean()
-
         return loss, reg_loss
 
     def forward(self, users: torch.tensor, items: torch.tensor):
@@ -252,13 +262,11 @@ class LightGCN(nn.Module):
 
     @torch.no_grad()
     def recommend(self, users: torch.tensor, k: int = 20):
-        d = 64
-
         all_users, all_items = self.computer()
         users_emb = all_users[users.long()].numpy()
         items_emb = all_items.numpy()
 
-        index = faiss.IndexFlatIP(d)
+        index = faiss.IndexFlatIP(self.latent_dim)
         index.add(items_emb)
         return index.search(users_emb, k)[1]
 
@@ -269,11 +277,11 @@ class LightGCN(nn.Module):
 
         for user in test_dataset.get_all_users():
             user_positive_items = test_dataset.get_user_positives(user)
-            if len(user_positive_items) > 0:
+            if user_positive_items:
                 users.append(user)
                 ground_truth.append(user_positive_items)
 
-        preds = self.recommend(torch.tensor(users))
+        preds = self.recommend(torch.tensor(users), max(config['METRICS_REPORT']))
         max_length = max(map(len, metrics.metric_dict.keys())) + max(
             map(lambda x: len(str(x)), config['METRICS_REPORT']))
         for metric_name, metric_func in metrics.metric_dict.items():
